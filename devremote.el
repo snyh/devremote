@@ -106,6 +106,26 @@ FILE must in local root directory and must not in any of ignore directories."
                                    buffer-name
                                    cmd))))
 
+(defun devremote-compilation-project ()
+  (interactive)
+  (let* ((buffer-name "*DEVREMOTE-COMPILATION*")
+         (long-name buffer-file-name)
+         (pinfo (devremote-query-pinfo long-name)))
+    (unless pinfo (error-not-in-project long-name))
+    (let* ((remote-root-dir (-pinfo-remote-root-dir pinfo))
+           (remote-server (string-remove-prefix "/ssh:" (-pinfo-server pinfo)))
+           (remote-cmd "make")
+           (cmd (format "ssh %s \"cd %s && %s\""
+                        remote-server
+                        remote-root-dir
+                        remote-cmd
+                        )))
+      (switch-to-buffer-other-window buffer-name)
+      (--before-execute-cmd cmd)
+      (start-process-shell-command "DEVREMOTE-SYNC"
+                                   buffer-name
+                                   cmd))))
+
 
 (defun -build-rsync-cmd (pinfo)
   (let* ((local-dir (-pinfo-local-root-dir pinfo))
@@ -118,7 +138,7 @@ FILE must in local root directory and must not in any of ignore directories."
                             (string-remove-prefix (concat local-dir "/") elt)))
                   ""
                   (-pinfo-ignore-dirs pinfo))))
-    (format "rsync -Pazv %s %s/ %s:%s"
+    (format "echo rsync -Pazv %s %s/ %s:%s"
             ignores
             local-dir
             server
@@ -151,6 +171,7 @@ FILE must in local root directory and must not in any of ignore directories."
   :keymap (let ((map (make-sparse-keymap)))
             (define-key map (kbd "<f12>") 'devremote-transfer-current)
             (define-key map (kbd "<f11>") 'devremote-transfer-project)
+            (define-key map (kbd "M-<f12>") 'devremote-compilation-project)
             map)
   )
 
