@@ -14,7 +14,8 @@
   server
   local-root-dir
   ignore-dirs
-  remote-root-dir)
+  remote-root-dir
+  build-cmd)
 
 (setq devremote-project-infos
       (list (make--pinfo
@@ -83,48 +84,26 @@ FILE must in local root directory and must not in any of ignore directories."
       (error-not-in-project long-name)
       )))
 
-(defun --before-execute-cmd (cmd)
-  (progn
-    (erase-buffer)
-    (insert (format "BEGIN %s at\n %s\n"
-                    cmd
-                    (shell-command-to-string "echo -n $(date)"))))
-  )
-
 (defun devremote-transfer-project ()
   (interactive)
-  (let* (
-         (buffer-name "*DEVREMOTE-SYNC*")
-         (long-name buffer-file-name)
-         (pinfo (devremote-query-pinfo long-name))
-         )
-    (unless pinfo (error-not-in-project long-name))
-    (let ((cmd (-build-rsync-cmd pinfo)))
-      (switch-to-buffer-other-window buffer-name)
-      (--before-execute-cmd cmd)
-      (start-process-shell-command "DEVREMOTE-SYNC"
-                                   buffer-name
-                                   cmd))))
+  (let* ((pinfo (devremote-query-pinfo buffer-file-name)))
+    (unless pinfo (error-not-in-project buffer-file-name))
+    (compilation-start (-build-rsync-cmd pinfo))))
 
 (defun devremote-compilation-project ()
   (interactive)
-  (let* ((buffer-name "*DEVREMOTE-COMPILATION*")
-         (long-name buffer-file-name)
-         (pinfo (devremote-query-pinfo long-name)))
+  (let ((pinfo (devremote-query-pinfo buffer-file-name)))
     (unless pinfo (error-not-in-project long-name))
     (let* ((remote-root-dir (-pinfo-remote-root-dir pinfo))
+           (local-root-dir (expand-file-name (-pinfo-local-root-dir pinfo)))
            (remote-server (string-remove-prefix "/ssh:" (-pinfo-server pinfo)))
-           (remote-cmd "make")
-           (cmd (format "ssh %s \"cd %s && %s\""
-                        remote-server
-                        remote-root-dir
-                        remote-cmd
-                        )))
-      (switch-to-buffer-other-window buffer-name)
-      (--before-execute-cmd cmd)
-      (start-process-shell-command "DEVREMOTE-SYNC"
-                                   buffer-name
-                                   cmd))))
+           (remote-cmd (or (-pinfo-build-cmd pinfo) "make"))
+           (compile-command (format "ssh %s \"cd %s && %s\""
+                                    remote-server
+                                    remote-root-dir
+                                    remote-cmd
+                                    )))
+      (compilation-start compile-command))))
 
 
 (defun -build-rsync-cmd (pinfo)
@@ -138,7 +117,7 @@ FILE must in local root directory and must not in any of ignore directories."
                             (string-remove-prefix (concat local-dir "/") elt)))
                   ""
                   (-pinfo-ignore-dirs pinfo))))
-    (format "echo rsync -Pazv %s %s/ %s:%s"
+    (format "rsync -Pazv %s %s/ %s:%s"
             ignores
             local-dir
             server
