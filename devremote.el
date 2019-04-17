@@ -5,6 +5,8 @@
 
 (require 'subr-x)
 (require 'dash)
+(require 'easymenu)
+
 
 (defun error-not-in-project (file)
   (user-error "The file %s isn't in any project"
@@ -147,12 +149,19 @@ FILE must in local root directory and must not in any of ignore directories."
 (define-minor-mode devremote-mode
   "Write code on home and test them on server by ssh"
   :lighter " DR"
-  :keymap (let ((map (make-sparse-keymap)))
+  :keymap (let ((map (make-sparse-keymap "devremote")))
             (define-key map (kbd "<f12>") 'devremote-transfer-current)
             (define-key map (kbd "<f11>") 'devremote-transfer-project)
             (define-key map (kbd "M-<f12>") 'devremote-compilation-project)
             map)
   )
+
+(easy-menu-define devremote-menu devremote-mode-map
+  "Menus for devremote-mode."
+  '("DevRemote"
+    ["Compile on remote" devremote-compilation-project]
+    ["Transfer Current" devremote-transfer-current]
+    ["Transfer Project" devremote-transfer-project]))
 
 (provide 'devremote)
 
