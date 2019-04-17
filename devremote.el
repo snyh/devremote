@@ -7,6 +7,7 @@
 (require 'dash)
 (require 'easymenu)
 
+(defvar devremote-default-server "/ssh:sw-sh")
 
 (defun error-not-in-project (file)
   (user-error "The file %s isn't in any project"
@@ -21,13 +22,17 @@
 
 (setq devremote-project-infos
       (list (make--pinfo
-             :server "/ssh:sw-sh"
+             :server devremote-default-server
              :local-root-dir "~/codes/node"
              :ignore-dirs '(".git" "out")
              :remote-root-dir "~/snyh/node")
-
             (make--pinfo
-             :server "/ssh:sw-sh"
+             :server devremote-default-server
+             :local-root-dir "~/codes/LuaJIT"
+             :ignore-dirs '(".git")
+             :remote-root-dir "~/snyh/LuaJIT")
+            (make--pinfo
+             :server devremote-default-server
              :local-root-dir "~/codes/go-sw64"
              :ignore-dirs '(".git" "pkg")
              :remote-root-dir "~/snyh/go-sw64")
@@ -155,6 +160,26 @@ FILE must in local root directory and must not in any of ignore directories."
             (define-key map (kbd "M-<f12>") 'devremote-compilation-project)
             map)
   )
+
+(defun devremote-create-project(local-root ignores server remote-root cmd)
+  (interactive (list
+                (read-directory-name "Local Root Directory :"
+                                     (projectile-project-root) nil t)
+                (split-string
+                 (read-string "Local ignore directories (split by space) :" ".git .cache")
+                 " " t)
+                (read-string "Remote Server name :" devremote-default-server)
+                (read-directory-name "Remote Root Directory name :" (projectile-project-root))
+                (read-shell-command "Remote build command line :" "make")
+                ))
+  (let ((pinfo (make--pinfo
+                :server server
+                :local-root-dir local-root
+                :ignore-dirs ignores
+                :remote-root-dir remote-root
+                :build-cmd cmd)))
+    (add-to-list 'devremote-project-infos pinfo)
+    (message "TODO Create %S" pinfo)))
 
 (easy-menu-define devremote-menu devremote-mode-map
   "Menus for devremote-mode."
