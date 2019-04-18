@@ -7,11 +7,13 @@
 (require 'dash)
 (require 'easymenu)
 
+(defvar devremote-mode-lighter " DR")
+
 (defvar devremote-default-server "/ssh:sw-sh")
 
 (defun error-not-in-project (file)
   (user-error "The file %s isn't in any project"
-	      file))
+              file))
 
 (cl-defstruct -pinfo
   server
@@ -115,15 +117,15 @@ FILE must in local root directory and must not in any of ignore directories."
 
 (defun -build-rsync-cmd (pinfo)
   (let* ((local-dir (-pinfo-local-root-dir pinfo))
-        (server (string-remove-prefix "/ssh:" (-pinfo-server pinfo)))
-        (remote-dir (-pinfo-remote-root-dir pinfo))
-        (ignores (-reduce-from
-                  (lambda (acc elt)
-                    (format "%s --exclude=\"%s\""
-                            acc
-                            (string-remove-prefix (concat local-dir "/") elt)))
-                  ""
-                  (-pinfo-ignore-dirs pinfo))))
+         (server (string-remove-prefix "/ssh:" (-pinfo-server pinfo)))
+         (remote-dir (-pinfo-remote-root-dir pinfo))
+         (ignores (-reduce-from
+                   (lambda (acc elt)
+                     (format "%s --exclude=\"%s\""
+                             acc
+                             (string-remove-prefix (concat local-dir "/") elt)))
+                   ""
+                   (-pinfo-ignore-dirs pinfo))))
     (format "rsync -Pazv %s %s/ %s:%s"
             ignores
             local-dir
@@ -144,6 +146,23 @@ FILE must in local root directory and must not in any of ignore directories."
       (devremote-try-transfer-current)
     (error-not-in-project buffer-file-name)))
 
+
+(defun devremote-toggle-auto-transfer ()
+  (interactive)
+  (let* ((fn 'devremote-transfer-current)
+         (enabled (member fn after-save-hook)))
+
+    (if enabled
+        (remove-hook 'after-save-hook fn t)
+      (add-hook 'after-save-hook fn nil t))
+
+    (if enabled
+        (kill-local-variable 'devremote-mode-lighter)
+      (setq devremote-mode-lighter
+            (format "%s(A)"
+                    (symbol-value
+                     (make-local-variable 'devremote-mode-lighter)))))))
+
 (defun --devremote-find-file-hook-function()
   (when (-current-buffer-in-project)
     (devremote-mode)
@@ -153,7 +172,7 @@ FILE must in local root directory and must not in any of ignore directories."
 
 (define-minor-mode devremote-mode
   "Write code on home and test them on server by ssh"
-  :lighter " DR"
+  :lighter devremote-mode-lighter
   :keymap (let ((map (make-sparse-keymap "devremote")))
             (define-key map (kbd "<f12>") 'devremote-transfer-current)
             (define-key map (kbd "<f11>") 'devremote-transfer-project)
@@ -186,6 +205,7 @@ FILE must in local root directory and must not in any of ignore directories."
   '("DevRemote"
     ["Compile on remote" devremote-compilation-project]
     ["Transfer Current" devremote-transfer-current]
+    ["Automatically Transfer" devremote-toggle-auto-transfer]
     ["Transfer Project" devremote-transfer-project]))
 
 (provide 'devremote)
