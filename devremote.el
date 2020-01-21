@@ -1,11 +1,11 @@
 ;;; devremote.el --- Make transfering code to remote server
+;;; -*- coding: utf-8; lexical-binding: t; -*-
 ;;;      more easy for temporary development and debugging.
 ;;; Commentary:
 ;;    automatically transfer to remote server.
 ;;
 
 (require 'subr-x)
-(require 'dash)
 (require 'easymenu)
 (require 'projectile)
 (require 'pcmpl-unix)
