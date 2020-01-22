@@ -120,23 +120,25 @@ FILE must in local root directory and must not in any of ignore directories."
     (compilation-start (-build-rsync-cmd pinfo))))
 
 
+(defun --devremote-select-ssh-server()
+  (let ((ssh-helm-source
+	 `((name . "Known hosts")
+	   (candidates . ,(pcmpl-ssh-config-hosts))
+	   (action . (lambda (candidate)
+		       (helm-marked-candidates))))
+	 ))
+    (format "/ssh:%s" (car (helm :sources '(ssh-helm-source) :prompt "Select Remote Server: ")))
+    )
+  )
 
-(setq ssh-helm-source
-      `((name . "Known hosts")
-        (candidates . ,(pcmpl-ssh-config-hosts))
-        (action . (lambda (candidate)
-                    (helm-marked-candidates)))))
-(defun devremote-switch-server (host)
-  "Request switch server to HOST."
-  (interactive
-   (or (helm :sources '(ssh-helm-source)) '(nil)))
-  (if host
-    (let* ((pinfo (devremote-query-pinfo buffer-file-name)))
-      (unless pinfo (error-not-in-project buffer-file-name))
-      (setf (-pinfo-server pinfo) (format "/ssh:%s" host))
-      (--devremote-update-lighter)
-      )))
-
+(defun devremote-switch-server ()
+  "Request switch server to host."
+  (interactive)
+  (let* ((pinfo (devremote-query-pinfo buffer-file-name)))
+    (unless pinfo (error-not-in-project buffer-file-name))
+    (setf (-pinfo-server pinfo) (--devremote-select-ssh-server))
+    (--devremote-update-lighter)
+    ))
 
 (defun devremote-compilation-project ()
   (interactive)
@@ -231,7 +233,7 @@ FILE must in local root directory and must not in any of ignore directories."
                 (split-string
                  (read-string "Local ignore directories (split by space) :" ".git .cache")
                  " " t)
-                (read-string "Remote Server name :" devremote-default-server)
+		(--devremote-select-ssh-server)
                 (read-directory-name "Remote Root Directory name :" (projectile-project-root))
                 (read-shell-command "Remote build command line :" "make")
                 ))
