@@ -250,6 +250,7 @@ FILE must in local root directory and must not in any of ignore directories."
 (easy-menu-define devremote-menu devremote-mode-map
   "Menus for devremote-mode."
   '("DevRemote"
+    ["Create New Project" devremote-create-project]
     ["Compile on remote" devremote-compilation-project]
     ["Transfer Current" devremote-transfer-current]
     ["Automatically Transfer" devremote-toggle-auto-transfer]
