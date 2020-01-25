@@ -122,12 +122,20 @@ FILE must in local root directory and must not in any of ignore directories."
 
 (defun --devremote-select-ssh-server()
   (let ((ssh-helm-source
-	 `((name . "Known hosts")
+	 `(
+	   (name . "选择服务器")
 	   (candidates . ,(pcmpl-ssh-config-hosts))
-	   (action . (lambda (candidate)
-		       (helm-marked-candidates))))
+	   (action . (lambda (s) (format "/ssh:%s" s)))
+	   )
 	 ))
-    (format "/ssh:%s" (car (helm :sources '(ssh-helm-source) :prompt "Select Remote Server: ")))
+    (helm
+     :sources
+     (list
+      ssh-helm-source
+      (helm-build-dummy-source "手动指定"
+	:action  (lambda (s) (format "/ssh:%s" s)))
+      )
+     :prompt "Select Remote Server: ")
     )
   )
 
