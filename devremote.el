@@ -181,17 +181,19 @@ FILE must in local root directory and must not in any of ignore directories."
             server
             remote-dir)))
 
-(defun -current-buffer-in-project()
+(defun devremote--current-buffer-in-project()
+  (unless devremote-project-infos
+    (devremote-load-known-projects))
   (in-any-project-p buffer-file-name))
 
 (defun devremote-try-transfer-current ()
-  (when (and devremote-mode (-current-buffer-in-project))
+  (when (and devremote-mode (devremote--current-buffer-in-project))
     (-copy-to-remote buffer-file-name)
     ))
 
 (defun devremote-transfer-current ()
   (interactive)
-  (if (-current-buffer-in-project)
+  (if (devremote--current-buffer-in-project)
       (devremote-try-transfer-current)
     (error-not-in-project buffer-file-name)))
 
@@ -213,18 +215,18 @@ FILE must in local root directory and must not in any of ignore directories."
                      (make-local-variable 'devremote-mode-lighter)))))))
 
 (defun --devremote-update-lighter()
-  (if (-current-buffer-in-project)
+  (if (devremote--current-buffer-in-project)
       (setq-local devremote-mode-lighter
 		  (let ((server (-pinfo-server (devremote-query-pinfo (buffer-file-name)))))
 		    (format " DR(%s)" (string-remove-prefix "/ssh:" server)))
 		  )))
 
-(defun --devremote-find-file-hook-function()
-  (when (-current-buffer-in-project)
+
+(defun devremote-detect()
+  (interactive)
+  (when (devremote--current-buffer-in-project)
     (devremote-mode)
     ))
-
-(add-hook 'find-file-hook '--devremote-find-file-hook-function)
 
 (define-minor-mode devremote-mode
   "Write code on home and test them on server by ssh"
@@ -253,7 +255,7 @@ FILE must in local root directory and must not in any of ignore directories."
                 :build-cmd cmd)))
     (add-to-list 'devremote-project-infos pinfo)
     (devremote-save-known-projects)
-    (--devremote-find-file-hook-function)))
+    (devremote-detect)))
 
 (easy-menu-define devremote-menu devremote-mode-map
   "Menus for devremote-mode."
@@ -263,8 +265,6 @@ FILE must in local root directory and must not in any of ignore directories."
     ["Transfer Current" devremote-transfer-current]
     ["Automatically Transfer" devremote-toggle-auto-transfer]
     ["Transfer Project" devremote-transfer-project]))
-
-(devremote-load-known-projects)
 
 (provide 'devremote)
 

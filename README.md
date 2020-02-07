@@ -10,9 +10,10 @@
 2. install `devremote` from github
 ``` lisp
 (use-package devremote
-  :ensure t
+  :hook (find-file . devremote-detect)
   :quelpa (devremote :fetcher github :repo "snyh/devremote")
-  :bind (("<f12>" . 'devremote-transfer-current)
+  :bind (:map devremote-mode-map
+	 ("<f12>" . 'devremote-transfer-current)
   	 ("<f11>" . 'devremote-transfer-project)
   	 ("M-<f12>" . 'devremote-compilation-project))
   )
@@ -21,5 +22,4 @@
 ## Usage
 0. Log in to the server with ssh and configure `~/.ssh/config` correctly.
 1. Open any project file with emacs
-2. Invoke `M-x` `devremote-mode`
 3. Invoke `M-x` `devremote-create-project`
